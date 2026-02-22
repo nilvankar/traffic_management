@@ -5,10 +5,15 @@ def render_upload():
     st.header("📂 Upload Video for Analysis")
     st.markdown("Upload recorded traffic footage for offline processing.")
     
-    uploaded_file = st.file_uploader("Choose a video file...", type=["mp4", "avi", "mov"])
-    
+    uploaded_file = st.file_uploader(
+    "Upload Image or Video",
+    type=["jpg", "jpeg", "png", "mp4", "avi", "mov"]
+)
     if uploaded_file is not None:
-        st.video(uploaded_file)
+        if uploaded_file.type.startswith("image"):
+            st.image(uploaded_file)
+        else:
+            st.video(uploaded_file)
         
         col1, col2 = st.columns([1, 1])
         with col1:
@@ -19,5 +24,12 @@ def render_upload():
             if st.button("Start Analysis", type="primary"):
                 with st.spinner("Uploading and initiating AI models..."):
                     result = upload_file_to_backend(uploaded_file)
-                    st.success(f"Success! {result['message']}")
+                    st.success("Detection completed successfully!")
                     st.balloons()
+                    if result["status"] == "success":
+                        st.success("Detection Completed!")
+                        st.image(
+                        result["result_url"],
+                        caption="Detected Output",
+                        use_container_width=True
+                    )

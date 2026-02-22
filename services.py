@@ -9,14 +9,14 @@ API_BASE_URL = "http://localhost:5000"
 DB_PATH = "traffic_data.db"
 
 def check_login(username, password):
-    """
-    Validates user credentials.
-    In real implementation, this would POST to Flask /login endpoint.
-    """
-    # MOCK implementation for frontend dev
-    if username == "admin" and password == "admin":
-        return True
-    return False
+    try:
+        response = requests.post(
+            f"{API_BASE_URL}/login",
+            json={"username": username, "password": password}
+        )
+        return response.status_code == 200
+    except:
+        return False
 
 def get_dashboard_stats():
     """
@@ -59,10 +59,23 @@ def get_recent_violations():
     return pd.DataFrame(data)
 
 def upload_file_to_backend(uploaded_file):
-    """
-    Sends uploaded video to Flask backend for processing.
-    """
-    # files = {'file': uploaded_file}
-    # response = requests.post(f"{API_BASE_URL}/upload", files=files)
-    # return response.json()
-    return {"status": "success", "message": "File received. Processing started."}
+
+    files = {
+        "file": (
+            uploaded_file.name,
+            uploaded_file.getvalue(),
+            uploaded_file.type
+        )
+    }
+
+    response = requests.post(
+        f"{API_BASE_URL}/upload",
+        files=files
+    )
+
+    data = response.json()
+
+    if data["status"] == "success":
+        data["result_url"] = f"{API_BASE_URL}/result/{data['result_path']}"
+
+    return data
