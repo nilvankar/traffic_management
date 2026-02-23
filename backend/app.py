@@ -11,7 +11,7 @@ app = Flask(__name__)
 # -----------------------
 # LOAD MODEL (ONLY ONCE)
 # -----------------------
-model = YOLO("models/helmet_detection/best.pt")
+model = YOLO("models/helmet_detection/yolo_26_best.pt")
 
 UPLOAD_FOLDER = "uploads"
 OUTPUT_FOLDER = "outputs"
@@ -175,5 +175,13 @@ def stats():
 def get_result(filename):
     return send_from_directory(".", filename)
 
+""" normal run
+
+""" 
+# if __name__ == "__main__":
+#     app.run(port=5000, debug=True)
+
+
+"""after deployment"""
 if __name__ == "__main__":
-    app.run(port=5000, debug=True)
+    app.run(host="0.0.0.0", port=5000)
