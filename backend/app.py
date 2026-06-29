@@ -49,6 +49,18 @@ def init_db():
     """)
 
     conn.commit()
+    
+    # Insert default admin user
+    try:
+        c.execute(
+            "INSERT INTO users (username, password) VALUES (?, ?)",
+            ("admin", "admin")
+        )
+        conn.commit()
+    except sqlite3.IntegrityError:
+        # User already exists
+        pass
+    
     conn.close()
 
 init_db()
