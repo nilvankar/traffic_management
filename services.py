@@ -1,81 +1,93 @@
+import os
+import sqlite3
+from pathlib import Path
+
 import pandas as pd
 import requests
-import sqlite3
-import os
 
-# CONFIGURATION
-# Connect to your backend teammate's API and DB here
-API_BASE_URL = "http://localhost:5000"
-DB_PATH = "traffic_data.db"
+API_BASE_URL = "http://127.0.0.1:5000"
+DB_PATH = Path(__file__).resolve().parent / "backend" / "traffic_violations.db"
 
-def check_login(username, password):
+
+def check_login(username: str, password: str) -> bool:
     try:
         response = requests.post(
             f"{API_BASE_URL}/login",
-            json={"username": username, "password": password}
+            json={"username": username, "password": password},
+            timeout=5,
         )
         return response.status_code == 200
-    except:
+    except requests.RequestException:
         return False
 
+
 def get_dashboard_stats():
-    """
-    Fetches summary statistics.
-    Try to hit Flask API, fall back to mock data.
-    """
     try:
-        response = requests.get(f"{API_BASE_URL}/api/stats", timeout=2)
+        response = requests.get(f"{API_BASE_URL}/api/stats", timeout=5)
         if response.status_code == 200:
             return response.json()
-    except:
-        # Fallback Mock Data
-        return {
-            "total_violations": 124,
-            "active_cameras": 8,
-            "system_status": "Online"
-        }
+    except requests.RequestException:
+        pass
+
+    return {
+        "total_violations": 0,
+        "today_violations": 0,
+        "helmet_violations": 0,
+        "seatbelt_violations": 0,
+        "active_cameras": 8,
+        "system_status": "Offline",
+    }
+
 
 def get_recent_violations():
-    """
-    Fetches violation history.
-    Tries SQLite direct access first (fastest for local), then API.
-    """
+    try:
+        response = requests.get(f"{API_BASE_URL}/api/violations", timeout=5)
+        if response.status_code == 200:
+            payload = response.json()
+            rows = payload.get("violations", [])
+            if rows:
+                return pd.DataFrame(rows)
+    except requests.RequestException:
+        pass
+
     if os.path.exists(DB_PATH):
         try:
             conn = sqlite3.connect(DB_PATH)
-            df = pd.read_sql("SELECT * FROM violations ORDER BY timestamp DESC LIMIT 50", conn)
+            df = pd.read_sql(
+                "SELECT image_name AS location, violation_types AS violation_type, created_at AS timestamp, status FROM violations ORDER BY created_at DESC LIMIT 50",
+                conn,
+            )
             conn.close()
-            return df
-        except Exception as e:
-            print(f"DB Error: {e}")
-    
-    # Mock Data if DB not found
-    data = {
-        "timestamp": ["2026-02-19 10:00", "2026-02-19 10:05", "2026-02-19 10:12"],
-        "violation_type": ["No Helmet", "Red Light", "Speeding"],
-        "location": ["MG Road, Bengaluru", "Connaught Place, Delhi", "NH-44 Highway"],
-        "status": ["Pending", "Verified", "Pending"]
-    }
-    return pd.DataFrame(data)
+            if not df.empty:
+                return df
+        except Exception:
+            pass
+
+    return pd.DataFrame(
+        {
+            "timestamp": [],
+            "violation_type": [],
+            "location": [],
+            "status": [],
+            "source": [],
+        }
+    )
+
 
 def upload_file_to_backend(uploaded_file):
-
     files = {
-        "file": (
+        "image": (
             uploaded_file.name,
             uploaded_file.getvalue(),
-            uploaded_file.type
+            uploaded_file.type or "application/octet-stream",
         )
     }
 
-    response = requests.post(
-        f"{API_BASE_URL}/upload",
-        files=files
-    )
-
-    data = response.json()
-
-    if data["status"] == "success":
-        data["result_url"] = f"{API_BASE_URL}/result/{data['result_path']}"
-
-    return data
+    try:
+        response = requests.post(f"{API_BASE_URL}/detect", files=files, timeout=120)
+        data = response.json()
+        if response.status_code != 200:
+            return {"status": "error", "error": data.get("error", "Detection failed")}
+        return data
+    except requests.RequestException as exc:
+        return {"status": "error", "error": f"Backend unavailable: {exc}"}

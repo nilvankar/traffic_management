@@ -1,72 +1,94 @@
 import streamlit as st
 
-# Must be the first Streamlit command
+from modules.dashboard import render_dashboard
+from modules.file_upload import render_upload
+from modules.login import render_login
+from modules.support import render_support
+
 st.set_page_config(
     page_title="Traffic Sentinel AI",
     page_icon="🚦",
     layout="wide",
-    initial_sidebar_state="expanded"
 )
 
-# Import modules after page config
-from modules import login, file_upload, dashboard, support
-
-# Custom CSS for styling
-st.markdown("""
-<style>
-    .main-header {
-        font-size: 2.5rem;
-        color: #FF4B4B;
-        text-align: center;
-        margin-bottom: 2rem;
+st.markdown(
+    """
+    <style>
+    :root {
+        --bg: #061a2d;
+        --card: #0d2340;
+        --primary: #38bdf8;
+        --primary-strong: #0ea5e9;
+        --accent: #22c55e;
+        --warning: #f59e0b;
+        --danger: #ef4444;
+        --text: #e2e8f0;
+        --muted: #94a3b8;
     }
-    .stButton>button {
-        width: 100%;
-        border-radius: 5px;
-        height: 3em;
+    .stApp {
+        background: linear-gradient(135deg, #061a2d 0%, #0c1d31 30%, #111827 100%);
+        color: var(--text);
     }
-    .metric-card {
-        background-color: #f0f2f6;
-        padding: 1rem;
-        border-radius: 10px;
-        text-align: center;
-        box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+    .block-container {
+        padding-top: 1rem;
+        padding-bottom: 2rem;
     }
-</style>
-""", unsafe_allow_html=True)
+    [data-testid="stSidebar"] {
+        background: rgba(12, 29, 49, 0.92);
+        border-right: 1px solid rgba(148, 163, 184, 0.18);
+    }
+    .stTabs [role="tablist"] {
+        gap: 0.5rem;
+    }
+    .stTabs [role="tab"] {
+        background: rgba(15, 23, 42, 0.8);
+        border-radius: 10px 10px 0 0;
+        color: var(--text);
+        border: 1px solid rgba(148, 163, 184, 0.15);
+    }
+    .stTabs [role="tab"][aria-selected="true"] {
+        background: linear-gradient(180deg, rgba(56,189,248,0.2), rgba(15,23,42,0.95));
+        border-bottom: 2px solid var(--primary);
+    }
+    div[data-testid="stMetricValue"] {
+        color: white;
+        font-weight: 700;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
 
-# Session State Initialization
-if 'authenticated' not in st.session_state:
-    st.session_state['authenticated'] = False
-if 'username' not in st.session_state:
-    st.session_state['username'] = None
+if "authenticated" not in st.session_state:
+    st.session_state.authenticated = False
 
-def main():
-    if not st.session_state['authenticated']:
-        login.render_login()
+if not st.session_state.authenticated:
+    render_login()
+else:
+    with st.sidebar:
+        st.image(
+            "https://images.unsplash.com/photo-1520607162513-77705c0f0d4a?auto=format&fit=crop&w=200&q=80",
+            use_container_width=True,
+        )
+        st.title("Traffic Sentinel")
+        st.caption(f"Operator: {st.session_state.get('username', 'Admin')}")
+
+        page = st.radio(
+            "Navigation",
+            ["Dashboard", "Upload", "Support"],
+            index=0,
+            label_visibility="collapsed",
+        )
+
+        st.divider()
+        if st.button("Logout", use_container_width=True):
+            st.session_state.authenticated = False
+            st.session_state.pop("username", None)
+            st.rerun()
+
+    if page == "Dashboard":
+        render_dashboard()
+    elif page == "Upload":
+        render_upload()
     else:
-        # Pinned Sidebar Layout
-        with st.sidebar:
-            st.image("https://cdn-icons-png.flaticon.com/512/3135/3135715.png", width=100, caption="Admin Profile")
-            st.title(f"Hi, {st.session_state['username']}")
-            st.markdown("---")
-            
-            menu = ["Realtime Dashboard", "File Upload", "Support"]
-            choice = st.radio("Navigate", menu)
-            
-            st.markdown("---")
-            if st.button("Logout"):
-                st.session_state['authenticated'] = False
-                st.session_state['username'] = None
-                st.rerun()
-
-        # Main Content Routing
-        if choice == "Realtime Dashboard":
-            dashboard.render_dashboard()
-        elif choice == "File Upload":
-            file_upload.render_upload()
-        elif choice == "Support":
-            support.render_support()
-
-if __name__ == "__main__":
-    main()
+        render_support()
