@@ -30,9 +30,9 @@ Python, YOLOv8, OpenCV, Flask, SQLite, Streamlit
 | Recall | _add your value_ |
 
 ## Screenshots
-![Helmet_Violatoin](Screenshot (14).png)
-![Helmet_Violatoin_number_plate](Screenshot (15).png)
-![Car_seatbelt](Screenshot (16).png)
+![Helmet_Violatoin](sample1.png)
+![Helmet_Violatoin_number_plate](sample2.png)
+![Car_seatbelt](sample3.png)
 
 ## Run Locally
 ```bash
