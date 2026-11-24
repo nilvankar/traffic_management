@@ -1,0 +1,6 @@
+Flask
+numpy
+opencv-python-headless
+Pillow
+streamlit
+ultralytics==8.4.14

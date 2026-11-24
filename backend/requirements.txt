@@ -69,7 +69,7 @@ narwhals==1.37.1
 networkx==3.5
 nltk==3.9.1
 numpy==2.2.3
-opencv-python==4.13.0.92
+opencv-python-headless==4.13.0.92
 packaging==24.2
 pandas==2.2.3
 passlib==1.7.4

@@ -1,15 +1,29 @@
-import streamlit as st
+from pathlib import Path
 
-from modules.dashboard import render_dashboard
-from modules.file_upload import render_upload
-from modules.login import render_login
-from modules.support import render_support
+import cv2
+import numpy as np
+import streamlit as st
+from PIL import Image
+
+from db import get_violations, init_db, save_violation
+from detector import detect, load_model, resize_image
+
+ROOT_DIR = Path(__file__).resolve().parent
+SAMPLES_DIR = ROOT_DIR / "samples"
 
 st.set_page_config(
-    page_title="Traffic Sentinel AI",
+    page_title="MetroPolis",
     page_icon="🚦",
     layout="wide",
 )
+
+
+@st.cache_resource
+def get_model():
+    return load_model()
+
+
+init_db()
 
 st.markdown(
     """
@@ -59,36 +73,83 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-if "authenticated" not in st.session_state:
-    st.session_state.authenticated = False
+st.title("MetroPolis")
+st.caption("AI-assisted traffic safety image analysis.")
 
-if not st.session_state.authenticated:
-    render_login()
+sample_files = (
+    sorted(
+        file
+        for file in SAMPLES_DIR.iterdir()
+        if file.is_file() and file.suffix.lower() in {".jpg", ".jpeg", ".png"}
+    )
+    if SAMPLES_DIR.is_dir()
+    else []
+)
+if sample_files:
+    image_source = st.radio("Image source", ["Upload an image", "Try sample images"])
 else:
-    with st.sidebar:
-        st.image(
-            "https://images.unsplash.com/photo-1520607162513-77705c0f0d4a?auto=format&fit=crop&w=200&q=80",
-            use_container_width=True,
+    image_source = "Upload an image"
+
+uploaded_image = None
+image_name = None
+if image_source == "Try sample images":
+    selected_sample = st.selectbox("Choose a sample image", sample_files, format_func=lambda path: path.name)
+    uploaded_image = Image.open(selected_sample).convert("RGB")
+    image_name = selected_sample.name
+else:
+    uploaded_file = st.file_uploader(
+        "Upload a traffic image",
+        type=["jpg", "jpeg", "png"],
+        accept_multiple_files=False,
+    )
+    if uploaded_file is not None:
+        uploaded_image = Image.open(uploaded_file).convert("RGB")
+        image_name = uploaded_file.name
+
+if uploaded_image is not None:
+    st.image(uploaded_image, caption="Input image", use_container_width=True)
+    if st.button("Analyze image", type="primary"):
+        image = np.asarray(uploaded_image)
+        image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+        image = resize_image(image)
+
+        with st.spinner("Running traffic safety detection..."):
+            annotated_image, violations = detect(
+                image,
+                model=get_model(),
+            )
+
+        save_violation(
+            image_name,
+            "",
+            violations,
+            {},
+            source="upload" if image_source == "Upload an image" else "sample",
         )
-        st.title("Traffic Sentinel")
-        st.caption(f"Operator: {st.session_state.get('username', 'Admin')}")
+        st.subheader("Annotated image")
+        st.image(annotated_image, channels="BGR", use_container_width=True)
+        st.subheader("Detected violations")
+        if violations:
+            st.dataframe(violations, use_container_width=True, hide_index=True)
+        else:
+            st.info("No violations detected.")
 
-        page = st.radio(
-            "Navigation",
-            ["Dashboard", "Upload", "Support"],
-            index=0,
-            label_visibility="collapsed",
-        )
-
-        st.divider()
-        if st.button("Logout", use_container_width=True):
-            st.session_state.authenticated = False
-            st.session_state.pop("username", None)
-            st.rerun()
-
-    if page == "Dashboard":
-        render_dashboard()
-    elif page == "Upload":
-        render_upload()
-    else:
-        render_support()
+st.subheader("Logged violations")
+history = get_violations()
+if history:
+    st.dataframe(
+        [
+            {
+                "Image": row["image_name"],
+                "Violation type": row["violation_types"] or "None",
+                "Timestamp": row["created_at"],
+                "Status": row["status"],
+                "Source": row["source"],
+            }
+            for row in history
+        ],
+        use_container_width=True,
+        hide_index=True,
+    )
+else:
+    st.info("No logged analyses yet.")

@@ -1,81 +1,38 @@
-# 🚦 AI-Based Traffic Detection System
-
-> **Code Unnati Innovation Program**  
-> *Automating Road Safety with Computer Vision & Deep Learning*
-
-![Traffic Sentinel Banner](https://images.unsplash.com/photo-1566835848608-89c030d97274?q=80&w=1000&auto=format&fit=crop)
-
-## 📖 Project Overview
-Road traffic violations are a major cause of accidents globally. This project, **Traffic Sentinel AI**, leverages **Deep Learning (YOLO)** and **Computer Vision** to automatically detect violations from video feeds.
-
-This repository contains the **Frontend Dashboard** built with **Streamlit**, designed to provide Traffic Police with real-time alerts and analytics.
-
-### 🌟 Key Features
-- **Real-time Monitoring:** Live video feed analysis with bounding boxes.
-- **Violation Detection:** Automatically flags:
-  - ⛑️ No Helmet
-  - 🚦 Red Light Jump
-  - 🏎️ Over-speeding
-- **Indian Context:** Tailored for Indian roads (e.g., MG Road, Connaught Place locations).
-- **Interactive Dashboard:** Filter history, view stats, and export reports.
-
+---
+title: MetroPolis
+emoji: 🚦
+sdk: streamlit
+app_file: app.py
+pinned: false
 ---
 
-## 🛠️ Tech Stack
-| Component | Technology |
-| :--- | :--- |
-| **Frontend** | Streamlit (Python) |
-| **Backend** | Flask (API) |
-| **Database** | SQLite |
-| **AI Model** | YOLOv8 + OpenCV |
+# MetroPolis
 
----
+MetroPolis is an AI-assisted traffic safety application that analyzes road images for helmet and seatbelt violations using a YOLO model.
 
-## 🚀 How to Run the Frontend
-Follow these steps to set up the dashboard on your local machine.
+## Features
 
-### 1. Prerequisites
-- Python 3.8 or higher installed.
+- Upload JPG, JPEG, or PNG images for analysis.
+- View annotated detections and violation type, confidence, and timestamp.
+- Review logged analyses from a local SQLite database.
+- Try images placed in the optional `samples/` folder.
+- Run inference directly in Streamlit without a separate Flask process.
 
-### 2. Installation
-Clone the repository and install dependencies:
+## Tech stack
+
+- Python and Streamlit
+- Ultralytics YOLO
+- OpenCV
+- SQLite
+- Flask API (optional for local use)
+
+## Run locally
+
 ```bash
-git clone https://github.com/VatsalJoshi0/Traffic-Detection-System.git
-cd Traffic-Detection-System
-pip install -r requirements.txt
-```
-
-### 3. Launch the App
-Run the following command to start the Streamlit server:
-```bash
+python -m pip install -r requirements.txt
 streamlit run app.py
 ```
-*Alternatively, on Windows, just double-click `run_app.bat`.*
 
-### 4. Access the Dashboard
-Open your browser and navigate to:
-`http://localhost:8501`
+The optional Flask API is available from `backend/app.py` for local API use.
 
-**Default Credentials:**
-- **Username:** `admin`
-- **Password:** `admin`
-
----
-
-## 📂 Project Structure
-```
-traffic_app/
-├── app.py                # Main Application Entry Point
-├── services.py           # API Integration Layer
-├── requirements.txt      # Python Dependencies
-├── run_app.bat           # Quick Launcher
-└── modules/              # UI Components
-    ├── login.py          # Authentication
-    ├── dashboard.py      # Live Monitoring
-    ├── file_upload.py    # Video Analysis
-    └── support.py        # Help Center
-```
-
-
-## 📜 License
-This project is part of the Code Unnati Innovation Program.
+The hosted demo supports image upload only; its SQLite demo data resets when the Space restarts.
